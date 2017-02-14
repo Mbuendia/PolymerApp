@@ -1,0 +1,168 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="../bower_components/highcharts-chart/highcharts-chart.html">
+<link rel="import" href="../bower_components/paper-buttont/paper-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="../bower_components/google-map/google-map.html">
+<link rel="import" href="../bower_components/google-map/google-map-marker.html">
+<link rel="import" href="../bower_components/google-map/google-map-poly.html">
+<link rel="import" href="../bower_components/google-map/google-map-directions.html">
+
+
+<script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+
+<dom-module id="my-new-view">
+    <!-- Defines the element's style and local DOM -->
+    <template>
+        <style>
+            :host {
+                display: block;
+
+                padding: 16px;
+            }
+            google-chart {
+                height: 300px;
+                width: 50em;
+            }
+            #map {
+                height: 600px;
+            }
+            #pages{
+                background-color:rgba(26, 142, 42, 0.55);
+            }
+        </style>
+
+        <h1>{{titlepage}}</h1>
+        <iron-ajax
+                auto
+                url="https://driven-crane-125115.firebaseio.com/datos.json"
+                handle-as="json"
+                on-response="handleResponse"
+                debounce-duration="300"></iron-ajax>
+<neon-animated-pages id="pages" class="flex" entry-animation="{{entryAnimation}}" exit-animation="{{exitAnimation}}"
+                     on-track="handleTrack" >
+    <google-map id="map" api-key="AIzaSyBNuTT0OTyJPzZKz3j4ZPohDGKIgvh4JQ8" latitude="37.77493" longitude="-122.41942" fit-to-markers>
+        <google-map-marker latitude="37.779" longitude="-122.3892"
+                           draggable="true" title="Go Giants!"></google-map-marker>
+        <google-map-marker latitude="37.777" longitude="-122.38911"></google-map-marker>
+    </google-map>
+    <!--AIzaSyBNuTT0OTyJPzZKz3j4ZPohDGKIgvh4JQ8-->
+
+    </neon-animatable>
+    <neon-animatable>
+        <neon-animatable>
+            <highcharts-chart class="" id="chartLuminosity" type="spline" data='{{dataLuminosity}}'
+                              title='Luminosity'
+                              loading$="{{splineLoading}}"
+                              y-zoom  x-label="Time" vs-time
+                              y-label="L"
+                              loadingMessage="loading.."  ></highcharts-chart>
+        <highcharts-chart class="" id="chartHumidity" type="spline"  data='[[1484656092379,123],[1484656092389,7],[1484656092460,1],[1484656092460,4],[1484656092460,123],[1484656092460,123]]'
+                          title='Humidity'
+                          loading$="{{splineLoading}}"
+                          y-zoom  x-label="Time" vs-time
+                          y-label="H"
+                          loadingMessage="loading.."  ></highcharts-chart>
+        <highcharts-chart class="" id="chartTemperature" type="spline"  data='[[1484655501,10],[1484655509,7],[1484655515,1],[1484655530,6],[1484655560,8],[1484655589,6]]'
+                          title='Temperature'
+                          loading$="{{splineLoading}}"
+                          y-zoom  x-label="Time" vs-time
+                          y-label="Cº"
+                          loadingMessage="loading.."  ></highcharts-chart>
+    </neon-animatable>
+</neon-animated-pages>
+
+
+
+
+       <!-- <paper-slider id="slider" min="10" max="100" value="{{sliderValue}}" on-change="_sliderChange"></paper-slider>-->
+    </template>
+    <!-- Creates the element's prototype and registers it -->
+    <script>
+        (function(){  Polymer({
+            is: 'my-new-view',
+
+
+            properties: {
+
+            },
+            handleResponse: function(event){
+                var response = event.detail.response;
+                var data = [];
+               for( var i=0; response.length>i; i++ ){
+
+                   data.push([response[i].x, response[i].y ]);
+
+
+               }
+                this.dataLuminosity= data;
+                this.loading();
+            },
+            loading: function() {this.splineLoading=!this.splineLoading},
+            ready: function () {
+                this.$.pages.selected = 0;
+                this.entryAnimation="slide-up-animation";
+                this.exitAnimation="fade-out-animation";
+                this.titlepage = "Mapa";
+                this.loading();
+
+
+            },
+             _sliderChange : function () {
+                 var value = this.sliderValue
+                 document.body.style.zoom = value+"%"
+             },
+            handleTrack: function(e){
+                switch(e.detail.state){
+                    case 'start':
+                        this.sizeTapped=e.detail.x;
+
+                        break;
+                    case 'track':
+                        break;
+                    case 'end':
+
+                        if(this.$.pages.selected == 0){
+                            if(e.detail.x <(this.sizeTapped-100)){
+                                console.log("derecha!");
+                                this.$.pages.selected = 1;
+                                this.$.chartLuminosity.resizeChart();
+                                this.$.chartHumidity.resizeChart();
+                                this.$.chartTemperature.resizeChart();
+
+                                this.entryAnimation="slide-from-left-animation";
+                                this.exitAnimation="slide-right-animation";
+                                this.titlepage = "Graficas";
+                            }
+                        }
+                        if(this.$.pages.selected == 1){
+                            if(e.detail.x >(this.sizeTapped+100)){
+                                console.log("izquierda!");
+                                this.$.pages.selected = 0;
+                                this.entryAnimation="slide-from-right-animation";
+                                this.exitAnimation="slide-left-animation";
+                                this.titlepage = "Mapa";
+                            }
+                        }
+
+                        break;
+
+
+
+                }
+
+            },
+            handleTap: function(e){
+                console.log(e);
+            }
+
+
+
+        });
+
+        })();
+    </script>
+</dom-module>
